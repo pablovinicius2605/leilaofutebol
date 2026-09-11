@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leilão do Futebol Pro - V2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <!-- TELA INICIAL -->
+    <div id="home-screen" class="screen">
+        <div class="box logo-box">
+            <h1 class="glow-text">⚽ LEILÃO DO FUTEBOL</h1>
+            <p style="color:#aaa; margin-bottom:20px;">Monte seu elenco. Gerencie suas moedas.</p>
+            <input type="text" id="playerName" placeholder="Seu Nome de Treinador" required autocomplete="off">
+            
+            <div class="divider"><span>CRIAR SALA</span></div>
+            <input type="password" id="createPassword" placeholder="Senha da Sala (Opcional)">
+            <button class="btn btn-primary" onclick="createRoom()">Criar e Entrar</button>
+            
+            <div class="divider"><span>ENTRAR EM SALA</span></div>
+            <input type="text" id="joinCode" placeholder="Código da Sala" autocomplete="off" style="text-transform: uppercase;">
+            <input type="password" id="joinPassword" placeholder="Senha da Sala (Se houver)">
+            <button class="btn btn-secondary" onclick="joinRoom()">Entrar</button>
+        </div>
+    </div>
+
+    <!-- LOBBY -->
+    <div id="lobby-screen" class="screen hidden">
+        <div class="box" style="max-width: 600px; width: 100%;">
+            <h2>SALA: <span id="lobbyRoomCode" class="glow-text"></span></h2>
+            <div class="info-badge">
+                <p>Moedas Iniciais: <strong style="color:var(--gold)">🪙 50</strong> | Tempo: <strong><span id="lobbyTime"></span>s</strong></p>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top:5px;">Elenco obrigatório: 1 Goleiro, 2 Meias/Pontas, 1 Atacante.</p>
+            </div>
+            
+            <h3>Jogadores (<span id="playerCount">0</span>/8)</h3>
+            <ul id="lobbyPlayers" class="ranking-list"></ul>
+            
+            <div class="action-buttons mt-10">
+                <button class="btn btn-secondary" id="btnReady" onclick="toggleReady()">Estou Pronto</button>
+                <button class="btn btn-primary hidden" id="btnStartGame" onclick="startGame()">Iniciar Partida</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA DO JOGO -->
+    <div id="game-screen" class="screen hidden">
+        <div class="game-grid">
+            <!-- Esquerda: Ranking -->
+            <div class="panel">
+                <div class="balance-card">
+                    <p>SUAS MOEDAS</p>
+                    <h1 class="glow-text" style="font-size:3rem; margin:10px 0; color:var(--gold); text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);">🪙 <span id="myBalance">0</span></h1>
+                </div>
+                <h3>Ranking da Sala</h3>
+                <ul id="gameRanking" class="ranking-list mt-10"></ul>
+            </div>
+
+            <!-- Centro: Leilão -->
+            <div class="panel main-auction">
+                <div id="auction-alert" class="auction-status">Aguardando...</div>
+                
+                <div class="timer-wrapper">
+                    <span class="timer-icon">⏱️</span>
+                    <span id="auctionTimer" class="timer-text">00</span>
+                </div>
+                
+                <div class="player-card">
+                    <img id="aucImage" src="" alt="Jogador">
+                    <div class="player-info">
+                        <h2 id="aucName">--</h2>
+                        <p id="aucNacionality">--</p>
+                        <p id="aucClub">--</p>
+                    </div>
+                    <div class="player-stats">
+                        <div class="stat-box"><span>POS</span><strong id="aucPos">--</strong></div>
+                        <div class="stat-box"><span>OVR</span><strong id="aucOvr">--</strong></div>
+                        <div class="stat-box"><span>IDA</span><strong id="aucAge">--</strong></div>
+                    </div>
+                </div>
+
+                <div class="current-bid-box">
+                    <p>MAIOR LANCE</p>
+                    <h2 class="glow-text" style="color:var(--gold);">🪙 <span id="highestBid">0</span></h2>
+                    <p class="bidder">por <span id="highestBidder">Ninguém</span></p>
+                </div>
+
+                <div class="bid-controls" id="bidControlsArea">
+                    <button class="btn btn-bid" onclick="sendBidOffset(1)">+ 1</button>
+                    <button class="btn btn-bid" onclick="sendBidOffset(5)">+ 5</button>
+                    <button class="btn btn-bid" onclick="sendBidOffset(10)">+ 10</button>
+                    <button class="btn btn-danger" onclick="foldBid()">DESISTIR</button>
+                </div>
+                <div class="custom-bid" id="customBidArea">
+                    <input type="number" id="customBid" placeholder="Lance exato" min="1">
+                    <button class="btn btn-primary" onclick="sendCustomBid()">Lançar</button>
+                </div>
+                <div id="lockedBidArea" class="hidden mt-10" style="color: #ff4444; font-weight: bold;">
+                    Posição preenchida ou você desistiu.
+                </div>
+            </div>
+
+            <!-- Direita: Elenco e Chat -->
+            <div class="panel">
+                <h3>Seu Elenco (4 Vagas)</h3>
+                <div class="squad-slots">
+                    <div class="slot" id="slot-gol">
+                        <span class="pos">GOL</span>
+                        <span class="name">Vazio</span>
+                    </div>
+                    <div class="slot" id="slot-mei1">
+                        <span class="pos">MEI</span>
+                        <span class="name">Vazio</span>
+                    </div>
+                    <div class="slot" id="slot-mei2">
+                        <span class="pos">MEI</span>
+                        <span class="name">Vazio</span>
+                    </div>
+                    <div class="slot" id="slot-ata">
+                        <span class="pos">ATA</span>
+                        <span class="name">Vazio</span>
+                    </div>
+                </div>
+                
+                <div class="divider mt-10"></div>
+                
+                <h3>Chat da Sala</h3>
+                <div class="chat-container">
+                    <ul id="chatBox" class="chat-messages"></ul>
+                    <div class="chat-input-area">
+                        <input type="text" id="chatInput" placeholder="Mensagem..." autocomplete="off" onkeypress="if(event.key==='Enter') sendChat()">
+                        <button class="btn btn-secondary" onclick="sendChat()">Enviar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
