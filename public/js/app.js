@@ -3,9 +3,9 @@ let currentRoom = null;
 let myId = null;
 let currentBidState = 0;
 let currentAuctionPos = null;
-let roomPlayersData = []; // Store to view teams
+let roomPlayersData = []; 
 
-const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, background: '#1a1c23', color: '#fff' });
+const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, background: '#0b132b', color: '#fff' });
 
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
 function createRoom() { const n = document.getElementById('playerName').value; if(!n) return Toast.fire({icon:'warning',title:'Nome!'}); socket.emit('createRoom', {playerName: n, password: document.getElementById('createPassword').value}); }
@@ -22,7 +22,7 @@ socket.on('updateLobby', (data) => {
     const ul = document.getElementById('lobbyPlayers'); ul.innerHTML = '';
     data.players.forEach(p => {
         const li = document.createElement('li');
-        li.innerHTML = `<span>${p.name} ${p.id === data.hostId ? '👑' : ''}</span><span style="color:${p.ready ? 'var(--neon-green)' : '#ff4444'}; font-weight:600;">${p.ready ? 'PRONTO' : 'AGUARDANDO'}</span>`;
+        li.innerHTML = `<span>${p.name} ${p.id === data.hostId ? '👑' : ''}</span><span style="color:${p.ready ? 'var(--neon-blue)' : '#ff4444'}; font-weight:800;">${p.ready ? 'PRONTO' : 'AGUARDANDO'}</span>`;
         ul.appendChild(li);
     });
     document.getElementById('playerCount').innerText = data.players.length;
@@ -32,7 +32,7 @@ socket.on('updateLobby', (data) => {
 
 function toggleReady() { socket.emit('toggleReady', currentRoom); }
 function startGame() { socket.emit('startGame', currentRoom); }
-socket.on('gameStarted', () => { showScreen('game-screen'); Toast.fire({icon:'success', title:'Partida iniciada!'}); });
+socket.on('gameStarted', () => { showScreen('game-screen'); Toast.fire({icon:'success', title:'Mercado Aberto!'}); });
 
 socket.on('auctionStart', (data) => {
     const info = data.auctionInfo;
@@ -40,7 +40,7 @@ socket.on('auctionStart', (data) => {
     currentAuctionPos = info.player.position;
     
     document.getElementById('auction-alert').innerHTML = "LEILÃO ABERTO";
-    document.getElementById('auction-alert').style.color = "var(--neon-green)";
+    document.getElementById('auction-alert').style.color = "var(--neon-blue)";
     document.getElementById('aucImage').src = info.player.image;
     document.getElementById('aucName').innerText = info.player.name;
     document.getElementById('aucNacionality').innerText = info.player.nationality;
@@ -55,8 +55,7 @@ socket.on('auctionStart', (data) => {
 
 socket.on('timerUpdate', t => {
     const el = document.getElementById('auctionTimer'); el.innerText = t.toString().padStart(2, '0');
-    el.style.color = (t<=5 && t>0) ? '#ff4444' : 'var(--text-main)';
-    // Efeito visual quando o tempo sobe (ex: +5s após lance)
+    el.style.color = (t<=5 && t>0) ? '#ff4444' : 'var(--white)';
     el.style.transform = 'scale(1.2)';
     setTimeout(() => el.style.transform = 'scale(1)', 200);
 });
@@ -75,7 +74,7 @@ socket.on('auctionResult', data => {
             Swal.fire({ title: 'CONTRATADO!', text: `Você comprou ${data.player.name} por 🪙${data.amount}`, icon: 'success', timer: 3000, showConfirmButton: false });
         }
     } else {
-        document.getElementById('auction-alert').innerText = "❌ NENHUM LANCE / TODOS DESISTIRAM.";
+        document.getElementById('auction-alert').innerText = "❌ TODOS DESISTIRAM.";
         document.getElementById('auction-alert').style.color = "#ff4444";
     }
 });
@@ -90,7 +89,15 @@ socket.on('simulationResult', data => {
     
     data.players.forEach((p, i) => {
         const li = document.createElement('li');
-        li.innerHTML = `<span><b>${i+1}º</b> ${p.name} <small>(OVR ${p.teamOvr})</small></span> <span style="color:var(--gold); font-weight:bold;">${p.pts} Pts</span>`;
+        // Adicionado o botão de Ver Time direto na tabela final!
+        li.innerHTML = `
+            <span>
+                <b style="color:var(--gold); display:inline-block; width:20px;">${i+1}º</b> 
+                ${p.name} <small style="color:var(--text-muted);">(OVR ${p.teamOvr})</small>
+                <button class="btn-ver-time" style="padding: 4px 8px; font-size:10px; margin-left:5px;" onclick="viewTeam('${p.id}')">Ver Elenco</button>
+            </span> 
+            <span style="color:var(--neon-blue); font-weight:800; font-size:16px;">${p.pts} Pts</span>
+        `;
         rankingEl.appendChild(li);
     });
 
@@ -102,7 +109,6 @@ socket.on('simulationResult', data => {
         matchesEl.appendChild(li);
     });
 
-    // Controle do Botão Jogar Novamente
     if (myId === data.hostId) {
         document.getElementById('btnPlayAgain').classList.remove('hidden');
         document.getElementById('waitHostText').classList.add('hidden');
@@ -112,28 +118,13 @@ socket.on('simulationResult', data => {
     }
 });
 
-function playAgain() {
-    socket.emit('playAgain', currentRoom);
-}
-
-function sendBidOffset(offset) {
-    const amount = currentBidState === 0 ? offset : currentBidState + offset;
-    socket.emit('placeBid', { roomCode: currentRoom, amount });
-}
-
-function sendCustomBid() {
-    const amount = parseInt(document.getElementById('customBid').value);
-    socket.emit('placeBid', { roomCode: currentRoom, amount });
-    document.getElementById('customBid').value = '';
-}
-
-function foldBid() {
-    socket.emit('foldBid', currentRoom);
-    lockBidUI();
-}
-
+function playAgain() { socket.emit('playAgain', currentRoom); }
+function sendBidOffset(offset) { const amount = currentBidState === 0 ? offset : currentBidState + offset; socket.emit('placeBid', { roomCode: currentRoom, amount }); }
+function sendCustomBid() { const amount = parseInt(document.getElementById('customBid').value); socket.emit('placeBid', { roomCode: currentRoom, amount }); document.getElementById('customBid').value = ''; }
+function foldBid() { socket.emit('foldBid', currentRoom); lockBidUI(); }
 function updateBidUI(amount, name) { document.getElementById('highestBid').innerText = amount; document.getElementById('highestBidder').innerText = name; }
 
+// VIEW TEAM (Tanto no jogo quanto na final)
 function viewTeam(playerId) {
     const p = roomPlayersData.find(x => x.id === playerId);
     if(!p) return;
@@ -141,25 +132,27 @@ function viewTeam(playerId) {
     let html = `<ul style="list-style:none; padding:0; text-align:left;">`;
     if(p.squad.length === 0) html += `<li>Nenhum jogador comprado.</li>`;
     p.squad.forEach(j => {
-        html += `<li style="margin-bottom:10px; background:#23252b; padding:10px; border-radius:5px;">
-                    <b style="color:var(--gold)">[${j.position}]</b> ${j.name} (OVR ${j.overall})
+        html += `<li style="margin-bottom:10px; background:#050914; padding:10px; border-radius:5px; border:1px solid var(--primary-blue);">
+                    <b style="color:var(--neon-blue); display:inline-block; width:50px;">[${j.position.substring(0,3).toUpperCase()}]</b> 
+                    <span style="color:#fff">${j.name}</span> 
+                    <b style="color:var(--gold); float:right;">OVR ${j.overall}</b>
                  </li>`;
     });
     html += `</ul>`;
     
     Swal.fire({
-        title: `Elenco de ${p.name}`,
+        title: `Elenco: ${p.name}`,
         html: html,
         showCloseButton: true,
-        showConfirmButton: false
+        showConfirmButton: false,
+        width: '400px'
     });
 }
 
 function updatePlayersState(players) {
-    roomPlayersData = players; // Save for viewTeam func
+    roomPlayersData = players; 
     const ranking = document.getElementById('gameRanking'); ranking.innerHTML = '';
     
-    // Força provisória (Soma de OVR)
     players.forEach(p => { p.score = p.squad.reduce((sum, j) => sum + j.overall, 0); });
     players.sort((a, b) => b.score - a.score);
 
@@ -167,18 +160,18 @@ function updatePlayersState(players) {
         const li = document.createElement('li');
         li.innerHTML = `
             <span><b>${i+1}</b> ${p.name} 
-                <button class="btn-ver-time" onclick="viewTeam('${p.id}')">Ver Time</button>
+                <button class="btn-ver-time" onclick="viewTeam('${p.id}')">Ver</button>
             </span> 
-            <span>🪙${p.balance}</span>`;
+            <span style="color:var(--gold); font-weight:bold;">🪙${p.balance}</span>`;
         ranking.appendChild(li);
 
         if (p.id === myId) {
             document.getElementById('myBalance').innerText = p.balance;
             renderMySquadSlots(p.squad);
             
-            // Trava botões de lance
             if (currentAuctionPos) {
-                const LIMITS = { "Goleiro": 1, "Meia/Ponta": 2, "Atacante": 1 };
+                // ATUALIZADO PARA 5 VAGAS
+                const LIMITS = { "Goleiro": 1, "Zagueiro": 1, "Meia/Ponta": 2, "Atacante": 1 };
                 const myPosCount = p.squad.filter(x => x.position === currentAuctionPos).length;
                 if(myPosCount >= LIMITS[currentAuctionPos]) lockBidUI();
                 else unlockBidUI();
@@ -200,8 +193,10 @@ function unlockBidUI() {
 }
 
 function renderMySquadSlots(squad) {
+    // ATUALIZADO PARA 5 SLOTS
     const slots = [
         { id: 'slot-gol', pos: 'Goleiro', label: 'GOL' },
+        { id: 'slot-zag', pos: 'Zagueiro', label: 'ZAG' },
         { id: 'slot-mei1', pos: 'Meia/Ponta', label: 'MEI' },
         { id: 'slot-mei2', pos: 'Meia/Ponta', label: 'MEI' },
         { id: 'slot-ata', pos: 'Atacante', label: 'ATA' }
@@ -217,6 +212,7 @@ function renderMySquadSlots(squad) {
     squad.forEach(p => {
         let targetId = '';
         if(p.position === 'Goleiro') targetId = 'slot-gol';
+        else if(p.position === 'Zagueiro') targetId = 'slot-zag';
         else if(p.position === 'Meia/Ponta') { targetId = `slot-mei${meiCount}`; meiCount++; }
         else if(p.position === 'Atacante') targetId = 'slot-ata';
 
@@ -224,7 +220,7 @@ function renderMySquadSlots(squad) {
             const el = document.getElementById(targetId);
             el.classList.add('filled');
             if(p.isMeme) el.classList.add('meme');
-            el.innerHTML = `<span class="pos">${p.isMeme ? 'MEME' : el.querySelector('.pos').innerText}</span><span class="name">${p.name} <small>(OVR ${p.overall})</small></span>`;
+            el.innerHTML = `<span class="pos">${p.isMeme ? 'MEME' : el.querySelector('.pos').innerText}</span><span class="name">${p.name} <small style="color:var(--text-muted)">(OVR ${p.overall})</small></span>`;
         }
     });
 }

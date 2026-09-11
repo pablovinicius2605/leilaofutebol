@@ -16,7 +16,9 @@ app.use(express.static(path.join(__dirname, '../public')));
 const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST"] } });
 const rooms = {};
 const generateRoomCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
-const SQUAD_LIMITS = { "Goleiro": 1, "Meia/Ponta": 2, "Atacante": 1 };
+
+// ADICIONADO ZAGUEIRO, TOTAL 5 JOGADORES
+const SQUAD_LIMITS = { "Goleiro": 1, "Zagueiro": 1, "Meia/Ponta": 2, "Atacante": 1 };
 
 function isPositionFull(player, position) {
     return player.squad.filter(p => p.position === position).length >= SQUAD_LIMITS[position];
@@ -31,9 +33,10 @@ io.on('connection', (socket) => {
                 password: data.password || "",
                 hostId: socket.id,
                 status: 'lobby',
-                settings: { startingMoney: 50, auctionTime: parseInt(data.auctionTime) || 15, maxPlayers: parseInt(data.maxPlayers) || 8 },
+                // Aumentado dinheiro para 75 pois agora são 5 posições
+                settings: { startingMoney: 75, auctionTime: parseInt(data.auctionTime) || 15, maxPlayers: parseInt(data.maxPlayers) || 8 },
                 players: {},
-                auctionQueue: [...normalPlayers].sort(() => 0.5 - Math.random()), 
+                auctionQueue: [], 
                 currentAuction: null,
                 timer: null
             };
@@ -74,6 +77,11 @@ io.on('connection', (socket) => {
         if (room && room.hostId === socket.id) {
             const allReady = Object.values(room.players).every(p => p.ready);
             if (!allReady) return socket.emit('error', 'Todos os jogadores precisam estar prontos.');
+            
+            // PEGA 30 JOGADORES ALEATORIOS DO BANCO DE DADOS
+            let shuffled = [...normalPlayers].sort(() => 0.5 - Math.random());
+            room.auctionQueue = shuffled.slice(0, 30);
+            
             room.status = 'game';
             io.to(roomCode).emit('gameStarted');
             startNextAuction(roomCode);
@@ -99,11 +107,10 @@ io.on('connection', (socket) => {
         auction.highestBidderId = socket.id;
         auction.highestBidderName = player.name;
         
-        // ADIÇÃO DE 5 SEGUNDOS (MAX 30s)
         auction.timeLeft = Math.min(auction.timeLeft + 5, 30);
 
         io.to(roomCode).emit('newBid', { amount: bidAmount, bidderName: player.name, bidderId: socket.id });
-        io.to(roomCode).emit('timerUpdate', auction.timeLeft); // Atualiza imediatamente na tela
+        io.to(roomCode).emit('timerUpdate', auction.timeLeft); 
     });
 
     socket.on('foldBid', (roomCode) => {
@@ -131,7 +138,6 @@ io.on('connection', (socket) => {
             }
         });
 
-        // Termina se 3 desistiram OU se não há mais ninguém que possa dar lance
         if (auction.folded.length >= 3 || possibleBidders === 0) {
             clearInterval(room.timer);
             resolveAuction(roomCode);
@@ -149,7 +155,7 @@ io.on('connection', (socket) => {
         const room = rooms[roomCode];
         if (room && room.hostId === socket.id) {
             room.status = 'lobby';
-            room.auctionQueue = [...normalPlayers].sort(() => 0.5 - Math.random());
+            room.auctionQueue = [];
             Object.values(room.players).forEach(p => {
                 p.balance = room.settings.startingMoney;
                 p.squad = [];
@@ -179,11 +185,12 @@ io.on('connection', (socket) => {
     function checkGameOverAndFill(roomCode) {
         const room = rooms[roomCode];
         const playersArr = Object.values(room.players);
-        const allFull = playersArr.every(p => p.squad.length >= 4);
+        // TOTAL DE 5 JOGADORES AGORA
+        const allFull = playersArr.every(p => p.squad.length >= 5);
         
         if (room.auctionQueue.length === 0 || allFull) {
             playersArr.forEach(p => {
-                ['Goleiro', 'Meia/Ponta', 'Atacante'].forEach(pos => {
+                ['Goleiro', 'Zagueiro', 'Meia/Ponta', 'Atacante'].forEach(pos => {
                     const currentCount = p.squad.filter(x => x.position === pos).length;
                     const needed = SQUAD_LIMITS[pos] - currentCount;
                     if (needed > 0) {
@@ -203,33 +210,67 @@ io.on('connection', (socket) => {
         return false;
     }
     
+    // SIMULAÇÃO MAIS DETALHADA
     function runSimulation(roomCode) {
         const room = rooms[roomCode];
         const playersArr = Object.values(room.players);
         
-        playersArr.forEach(p => { p.teamOvr = p.squad.reduce((sum, j) => sum + j.overall, 0); p.pts = 0; });
+        playersArr.forEach(p => { 
+            p.teamOvr = p.squad.reduce((sum, j) => sum + j.overall, 0); 
+            p.pts = 0; 
+            
+            // Força de Setores para simulação tática
+            let defPlayers = p.squad.filter(j => j.position === 'Goleiro' || j.position === 'Zagueiro');
+            let atkPlayers = p.squad.filter(j => j.position === 'Meia/Ponta' || j.position === 'Atacante');
+            
+            p.defOvr = defPlayers.reduce((sum, j) => sum + j.overall, 0) / Math.max(1, defPlayers.length);
+            p.atkOvr = atkPlayers.reduce((sum, j) => sum + j.overall, 0) / Math.max(1, atkPlayers.length);
+        });
+        
         let matches = [];
 
-        // Simula todos contra todos (ida simples)
+        // Ida simples
         for(let i=0; i<playersArr.length; i++) {
             for(let j=i+1; j<playersArr.length; j++) {
                 let p1 = playersArr[i], p2 = playersArr[j];
                 
-                // Fator sorte (-10 a +10 de variação de sorte)
-                let rng1 = p1.teamOvr + Math.floor(Math.random() * 20 - 10);
-                let rng2 = p2.teamOvr + Math.floor(Math.random() * 20 - 10);
+                // Attack P1 vs Defense P2 + RNG
+                let p1Chance = p1.atkOvr - p2.defOvr + Math.floor(Math.random() * 20 - 10);
+                let p2Chance = p2.atkOvr - p1.defOvr + Math.floor(Math.random() * 20 - 10);
                 
-                let goals1 = Math.max(0, Math.floor((rng1 - rng2 + 10) / 10));
-                let goals2 = Math.max(0, Math.floor((rng2 - rng1 + 10) / 10));
+                let goals1 = Math.max(0, Math.floor((p1Chance + 15) / 10));
+                let goals2 = Math.max(0, Math.floor((p2Chance + 15) / 10));
                 
-                // Capping goals for realism
-                goals1 = Math.min(goals1, 5); goals2 = Math.min(goals2, 5);
+                goals1 = Math.min(goals1, 4); goals2 = Math.min(goals2, 4);
                 
                 if(goals1 > goals2) p1.pts += 3;
                 else if(goals2 > goals1) p2.pts += 3;
                 else { p1.pts += 1; p2.pts += 1; }
                 
-                matches.push(`${p1.name} <b style="color:var(--gold)">${goals1} x ${goals2}</b> ${p2.name}`);
+                // Pegar autores dos gols (apenas meias e atacantes fazem gol nesta simulação pra simplificar)
+                let scorers1 = [], scorers2 = [];
+                let atk1 = p1.squad.filter(x => x.position === 'Atacante' || x.position === 'Meia/Ponta');
+                let atk2 = p2.squad.filter(x => x.position === 'Atacante' || x.position === 'Meia/Ponta');
+                
+                for(let k=0; k<goals1; k++) {
+                    let scorer = atk1[Math.floor(Math.random() * atk1.length)];
+                    if(scorer) scorers1.push(scorer.name.split(' ')[0]);
+                }
+                for(let k=0; k<goals2; k++) {
+                    let scorer = atk2[Math.floor(Math.random() * atk2.length)];
+                    if(scorer) scorers2.push(scorer.name.split(' ')[0]);
+                }
+                
+                let s1Text = scorers1.length > 0 ? `<div style="font-size:11px; color:#888;">⚽ ${scorers1.join(', ')}</div>` : '';
+                let s2Text = scorers2.length > 0 ? `<div style="font-size:11px; color:#888;">⚽ ${scorers2.join(', ')}</div>` : '';
+
+                matches.push(`
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <div style="width:40%; text-align:right;"><b>${p1.name}</b> ${s1Text}</div>
+                        <div style="width:20%; text-align:center; color:var(--gold); font-weight:bold; font-size:18px;">${goals1} x ${goals2}</div>
+                        <div style="width:40%; text-align:left;"><b>${p2.name}</b> ${s2Text}</div>
+                    </div>
+                `);
             }
         }
         
@@ -245,7 +286,6 @@ io.on('connection', (socket) => {
 
         const playerToAuction = room.auctionQueue.pop();
         
-        // Pula o jogador se ninguém puder/quiser comprar
         let validBidders = 0;
         Object.values(room.players).forEach(p => {
             if (!isPositionFull(p, playerToAuction.position) && p.balance > 0) validBidders++;

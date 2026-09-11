@@ -1,7 +1,7 @@
 {
   "name": "leilao-do-futebol",
-  "version": "3.0.0",
-  "description": "Jogo multiplayer de leilão de futebol em tempo real - V3",
+  "version": "4.0.0",
+  "description": "Jogo multiplayer de leilão de futebol em tempo real - V4",
   "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js"
