@@ -1,11 +1,8 @@
 const normalPlayers = [
-    // Goleiros
     { id: 1, name: "Alisson Becker", position: "Goleiro", nationality: "Brasil", club: "Liverpool", overall: 89, age: 31, image: "https://ui-avatars.com/api/?name=Alisson+B&background=1a1c23&color=00ff88&size=200" },
     { id: 2, name: "Ederson", position: "Goleiro", nationality: "Brasil", club: "Man City", overall: 88, age: 30, image: "https://ui-avatars.com/api/?name=Ederson&background=1a1c23&color=00ff88&size=200" },
     { id: 3, name: "Thibaut Courtois", position: "Goleiro", nationality: "Bélgica", club: "Real Madrid", overall: 90, age: 31, image: "https://ui-avatars.com/api/?name=Courtois&background=1a1c23&color=00ff88&size=200" },
     { id: 4, name: "Dibu Martínez", position: "Goleiro", nationality: "Argentina", club: "Aston Villa", overall: 86, age: 31, image: "https://ui-avatars.com/api/?name=Dibu+M&background=1a1c23&color=00ff88&size=200" },
-    
-    // Meias/Pontas
     { id: 5, name: "Vinícius Júnior", position: "Meia/Ponta", nationality: "Brasil", club: "Real Madrid", overall: 90, age: 23, image: "https://ui-avatars.com/api/?name=Vini+Jr&background=1a1c23&color=00ff88&size=200" },
     { id: 6, name: "Kevin De Bruyne", position: "Meia/Ponta", nationality: "Bélgica", club: "Man City", overall: 91, age: 32, image: "https://ui-avatars.com/api/?name=De+Bruyne&background=1a1c23&color=00ff88&size=200" },
     { id: 7, name: "Jude Bellingham", position: "Meia/Ponta", nationality: "Inglaterra", club: "Real Madrid", overall: 87, age: 20, image: "https://ui-avatars.com/api/?name=Jude+B&background=1a1c23&color=00ff88&size=200" },
@@ -14,8 +11,6 @@ const normalPlayers = [
     { id: 10, name: "Phil Foden", position: "Meia/Ponta", nationality: "Inglaterra", club: "Man City", overall: 86, age: 23, image: "https://ui-avatars.com/api/?name=Foden&background=1a1c23&color=00ff88&size=200" },
     { id: 11, name: "Rafael Leão", position: "Meia/Ponta", nationality: "Portugal", club: "Milan", overall: 86, age: 24, image: "https://ui-avatars.com/api/?name=Leao&background=1a1c23&color=00ff88&size=200" },
     { id: 12, name: "Bernardo Silva", position: "Meia/Ponta", nationality: "Portugal", club: "Man City", overall: 88, age: 29, image: "https://ui-avatars.com/api/?name=Bernardo&background=1a1c23&color=00ff88&size=200" },
-
-    // Atacantes
     { id: 13, name: "Erling Haaland", position: "Atacante", nationality: "Noruega", club: "Man City", overall: 91, age: 23, image: "https://ui-avatars.com/api/?name=Haaland&background=1a1c23&color=00ff88&size=200" },
     { id: 14, name: "Kylian Mbappé", position: "Atacante", nationality: "França", club: "PSG", overall: 91, age: 25, image: "https://ui-avatars.com/api/?name=Mbappe&background=1a1c23&color=00ff88&size=200" },
     { id: 15, name: "Harry Kane", position: "Atacante", nationality: "Inglaterra", club: "Bayern", overall: 90, age: 30, image: "https://ui-avatars.com/api/?name=Kane&background=1a1c23&color=00ff88&size=200" },
@@ -33,5 +28,4 @@ const memePlayers = [
     { id: 907, name: "Ribamar", position: "Atacante", nationality: "Brasil", club: "Náutico", overall: 35, age: 27, image: "https://ui-avatars.com/api/?name=Ribamar&background=ff4444&color=fff&size=200" },
     { id: 908, name: "Yuri Alberto", position: "Atacante", nationality: "Brasil", club: "Corinthians", overall: 35, age: 23, image: "https://ui-avatars.com/api/?name=Yuri+A&background=ff4444&color=fff&size=200" }
 ];
-
 module.exports = { normalPlayers, memePlayers };

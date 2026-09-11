@@ -1,11 +1,10 @@
 {
   "name": "leilao-do-futebol",
-  "version": "2.0.0",
-  "description": "Jogo multiplayer de leilão de futebol em tempo real, otimizado para Render.",
+  "version": "3.0.0",
+  "description": "Jogo multiplayer de leilão de futebol em tempo real - V3",
   "main": "server/server.js",
   "scripts": {
-    "start": "node server/server.js",
-    "dev": "node --watch server/server.js"
+    "start": "node server/server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

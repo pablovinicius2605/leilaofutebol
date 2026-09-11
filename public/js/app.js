@@ -3,6 +3,7 @@ let currentRoom = null;
 let myId = null;
 let currentBidState = 0;
 let currentAuctionPos = null;
+let roomPlayersData = []; // Store to view teams
 
 const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, background: '#1a1c23', color: '#fff' });
 
@@ -55,6 +56,9 @@ socket.on('auctionStart', (data) => {
 socket.on('timerUpdate', t => {
     const el = document.getElementById('auctionTimer'); el.innerText = t.toString().padStart(2, '0');
     el.style.color = (t<=5 && t>0) ? '#ff4444' : 'var(--text-main)';
+    // Efeito visual quando o tempo sobe (ex: +5s após lance)
+    el.style.transform = 'scale(1.2)';
+    setTimeout(() => el.style.transform = 'scale(1)', 200);
 });
 
 socket.on('newBid', data => {
@@ -71,17 +75,46 @@ socket.on('auctionResult', data => {
             Swal.fire({ title: 'CONTRATADO!', text: `Você comprou ${data.player.name} por 🪙${data.amount}`, icon: 'success', timer: 3000, showConfirmButton: false });
         }
     } else {
-        document.getElementById('auction-alert').innerText = "❌ NENHUM LANCE. Jogador ignorado.";
+        document.getElementById('auction-alert').innerText = "❌ NENHUM LANCE / TODOS DESISTIRAM.";
         document.getElementById('auction-alert').style.color = "#ff4444";
     }
 });
 
 socket.on('updateState', data => updatePlayersState(data.players));
 
-socket.on('gameOver', players => {
-    document.getElementById('auction-alert').innerText = "FIM DE JOGO!";
-    Swal.fire({ title: 'Mercado Fechado!', text: 'Seus times estão completos. Verifique o ranking final!', icon: 'info' });
+// TELA DE SIMULAÇÃO (FIM DE JOGO)
+socket.on('simulationResult', data => {
+    showScreen('sim-screen');
+    const rankingEl = document.getElementById('simRanking');
+    rankingEl.innerHTML = '';
+    
+    data.players.forEach((p, i) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span><b>${i+1}º</b> ${p.name} <small>(OVR ${p.teamOvr})</small></span> <span style="color:var(--gold); font-weight:bold;">${p.pts} Pts</span>`;
+        rankingEl.appendChild(li);
+    });
+
+    const matchesEl = document.getElementById('simMatches');
+    matchesEl.innerHTML = '';
+    data.matches.forEach(m => {
+        const li = document.createElement('li');
+        li.innerHTML = m;
+        matchesEl.appendChild(li);
+    });
+
+    // Controle do Botão Jogar Novamente
+    if (myId === data.hostId) {
+        document.getElementById('btnPlayAgain').classList.remove('hidden');
+        document.getElementById('waitHostText').classList.add('hidden');
+    } else {
+        document.getElementById('btnPlayAgain').classList.add('hidden');
+        document.getElementById('waitHostText').classList.remove('hidden');
+    }
 });
+
+function playAgain() {
+    socket.emit('playAgain', currentRoom);
+}
 
 function sendBidOffset(offset) {
     const amount = currentBidState === 0 ? offset : currentBidState + offset;
@@ -101,27 +134,55 @@ function foldBid() {
 
 function updateBidUI(amount, name) { document.getElementById('highestBid').innerText = amount; document.getElementById('highestBidder').innerText = name; }
 
+function viewTeam(playerId) {
+    const p = roomPlayersData.find(x => x.id === playerId);
+    if(!p) return;
+    
+    let html = `<ul style="list-style:none; padding:0; text-align:left;">`;
+    if(p.squad.length === 0) html += `<li>Nenhum jogador comprado.</li>`;
+    p.squad.forEach(j => {
+        html += `<li style="margin-bottom:10px; background:#23252b; padding:10px; border-radius:5px;">
+                    <b style="color:var(--gold)">[${j.position}]</b> ${j.name} (OVR ${j.overall})
+                 </li>`;
+    });
+    html += `</ul>`;
+    
+    Swal.fire({
+        title: `Elenco de ${p.name}`,
+        html: html,
+        showCloseButton: true,
+        showConfirmButton: false
+    });
+}
+
 function updatePlayersState(players) {
+    roomPlayersData = players; // Save for viewTeam func
     const ranking = document.getElementById('gameRanking'); ranking.innerHTML = '';
     
-    // Calcula força do time (soma de OVR)
+    // Força provisória (Soma de OVR)
     players.forEach(p => { p.score = p.squad.reduce((sum, j) => sum + j.overall, 0); });
     players.sort((a, b) => b.score - a.score);
 
     players.forEach((p, i) => {
         const li = document.createElement('li');
-        li.innerHTML = `<span><b>${i+1}</b> ${p.name}</span> <span>🪙${p.balance} | OVR ${p.score}</span>`;
+        li.innerHTML = `
+            <span><b>${i+1}</b> ${p.name} 
+                <button class="btn-ver-time" onclick="viewTeam('${p.id}')">Ver Time</button>
+            </span> 
+            <span>🪙${p.balance}</span>`;
         ranking.appendChild(li);
 
         if (p.id === myId) {
             document.getElementById('myBalance').innerText = p.balance;
             renderMySquadSlots(p.squad);
             
-            // Trava botões de lance se a posição já estiver preenchida no MEU time
-            const LIMITS = { "Goleiro": 1, "Meia/Ponta": 2, "Atacante": 1 };
-            const myPosCount = p.squad.filter(x => x.position === currentAuctionPos).length;
-            if(myPosCount >= LIMITS[currentAuctionPos]) lockBidUI();
-            else unlockBidUI();
+            // Trava botões de lance
+            if (currentAuctionPos) {
+                const LIMITS = { "Goleiro": 1, "Meia/Ponta": 2, "Atacante": 1 };
+                const myPosCount = p.squad.filter(x => x.position === currentAuctionPos).length;
+                if(myPosCount >= LIMITS[currentAuctionPos]) lockBidUI();
+                else unlockBidUI();
+            }
         }
     });
 }
@@ -139,7 +200,6 @@ function unlockBidUI() {
 }
 
 function renderMySquadSlots(squad) {
-    // Reseta visual dos slots
     const slots = [
         { id: 'slot-gol', pos: 'Goleiro', label: 'GOL' },
         { id: 'slot-mei1', pos: 'Meia/Ponta', label: 'MEI' },

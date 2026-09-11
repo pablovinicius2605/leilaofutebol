@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leilão do Futebol Pro - V2</title>
+    <title>Leilão do Futebol Pro - V3</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="css/style.css">
@@ -15,7 +15,7 @@
     <div id="home-screen" class="screen">
         <div class="box logo-box">
             <h1 class="glow-text">⚽ LEILÃO DO FUTEBOL</h1>
-            <p style="color:#aaa; margin-bottom:20px;">Monte seu elenco. Gerencie suas moedas.</p>
+            <p style="color:#aaa; margin-bottom:20px;">Monte seu elenco. Gerencie moedas. Vença a Liga.</p>
             <input type="text" id="playerName" placeholder="Seu Nome de Treinador" required autocomplete="off">
             
             <div class="divider"><span>CRIAR SALA</span></div>
@@ -34,8 +34,8 @@
         <div class="box" style="max-width: 600px; width: 100%;">
             <h2>SALA: <span id="lobbyRoomCode" class="glow-text"></span></h2>
             <div class="info-badge">
-                <p>Moedas Iniciais: <strong style="color:var(--gold)">🪙 50</strong> | Tempo: <strong><span id="lobbyTime"></span>s</strong></p>
-                <p style="font-size: 12px; color: var(--text-muted); margin-top:5px;">Elenco obrigatório: 1 Goleiro, 2 Meias/Pontas, 1 Atacante.</p>
+                <p>Moedas Iniciais: <strong style="color:var(--gold)">🪙 50</strong> | Tempo: <strong><span id="lobbyTime"></span>s</strong> (+5s por lance)</p>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top:5px;">Vagas: 1 Goleiro, 2 Meias/Pontas, 1 Atacante.</p>
             </div>
             
             <h3>Jogadores (<span id="playerCount">0</span>/8)</h3>
@@ -51,18 +51,18 @@
     <!-- TELA DO JOGO -->
     <div id="game-screen" class="screen hidden">
         <div class="game-grid">
-            <!-- Esquerda: Ranking -->
-            <div class="panel">
-                <div class="balance-card">
-                    <p>SUAS MOEDAS</p>
-                    <h1 class="glow-text" style="font-size:3rem; margin:10px 0; color:var(--gold); text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);">🪙 <span id="myBalance">0</span></h1>
+            <!-- Esquerda: Ranking e Saldo -->
+            <div class="panel order-2">
+                <div class="balance-card" style="text-align: center;">
+                    <p style="font-weight: bold; color: var(--text-muted)">SUAS MOEDAS</p>
+                    <h1 class="glow-text" style="font-size:3rem; margin:10px 0; color:var(--gold);">🪙 <span id="myBalance">0</span></h1>
                 </div>
-                <h3>Ranking da Sala</h3>
-                <ul id="gameRanking" class="ranking-list mt-10"></ul>
+                <h3 style="margin-top: 15px;">Ranking da Sala</h3>
+                <ul id="gameRanking" class="ranking-list mt-10" style="max-height: 250px;"></ul>
             </div>
 
-            <!-- Centro: Leilão -->
-            <div class="panel main-auction">
+            <!-- Centro: Leilão Principal -->
+            <div class="panel main-auction order-1">
                 <div id="auction-alert" class="auction-status">Aguardando...</div>
                 
                 <div class="timer-wrapper">
@@ -100,31 +100,19 @@
                     <input type="number" id="customBid" placeholder="Lance exato" min="1">
                     <button class="btn btn-primary" onclick="sendCustomBid()">Lançar</button>
                 </div>
-                <div id="lockedBidArea" class="hidden mt-10" style="color: #ff4444; font-weight: bold;">
-                    Posição preenchida ou você desistiu.
+                <div id="lockedBidArea" class="hidden mt-10" style="color: #ff4444; font-weight: bold; background: #331111; padding: 15px; border-radius: 8px;">
+                    Posição cheia ou você desistiu deste jogador.
                 </div>
             </div>
 
             <!-- Direita: Elenco e Chat -->
-            <div class="panel">
+            <div class="panel order-3">
                 <h3>Seu Elenco (4 Vagas)</h3>
                 <div class="squad-slots">
-                    <div class="slot" id="slot-gol">
-                        <span class="pos">GOL</span>
-                        <span class="name">Vazio</span>
-                    </div>
-                    <div class="slot" id="slot-mei1">
-                        <span class="pos">MEI</span>
-                        <span class="name">Vazio</span>
-                    </div>
-                    <div class="slot" id="slot-mei2">
-                        <span class="pos">MEI</span>
-                        <span class="name">Vazio</span>
-                    </div>
-                    <div class="slot" id="slot-ata">
-                        <span class="pos">ATA</span>
-                        <span class="name">Vazio</span>
-                    </div>
+                    <div class="slot" id="slot-gol"><span class="pos">GOL</span><span class="name">Vazio</span></div>
+                    <div class="slot" id="slot-mei1"><span class="pos">MEI</span><span class="name">Vazio</span></div>
+                    <div class="slot" id="slot-mei2"><span class="pos">MEI</span><span class="name">Vazio</span></div>
+                    <div class="slot" id="slot-ata"><span class="pos">ATA</span><span class="name">Vazio</span></div>
                 </div>
                 
                 <div class="divider mt-10"></div>
@@ -137,6 +125,30 @@
                         <button class="btn btn-secondary" onclick="sendChat()">Enviar</button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA DE RESULTADOS DA SIMULAÇÃO -->
+    <div id="sim-screen" class="screen hidden">
+        <div class="box" style="max-width: 800px; width: 100%;">
+            <h1 class="glow-text" style="color: var(--gold);">🏆 CAMPEONATO FINAL</h1>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Veja os resultados das partidas baseadas na força dos elencos montados.</p>
+            
+            <div class="sim-grid">
+                <div>
+                    <h3 style="margin-bottom: 15px;">Tabela de Classificação</h3>
+                    <ul id="simRanking" class="ranking-list" style="max-height: none;"></ul>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 15px;">Placar dos Jogos</h3>
+                    <ul id="simMatches" class="ranking-list" style="background: #111; border: 1px dashed var(--card-border);"></ul>
+                </div>
+            </div>
+
+            <div class="mt-10" style="margin-top: 30px;">
+                <button class="btn btn-primary hidden" id="btnPlayAgain" onclick="playAgain()">JOGAR NOVAMENTE</button>
+                <p id="waitHostText" style="color: var(--text-muted);" class="hidden">Aguardando Host iniciar nova partida...</p>
             </div>
         </div>
     </div>
