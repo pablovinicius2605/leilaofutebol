@@ -1,0 +1,98 @@
+:root {
+    --bg-dark: #0a0a0c;
+    --card-bg: #15161a;
+    --card-border: #23252b;
+    --neon-green: #00ff88;
+    --neon-green-dim: rgba(0, 255, 136, 0.2);
+    --gold: #ffd700;
+    --text-main: #f0f0f0;
+    --text-muted: #8a8d98;
+    --accent: #2b5cff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+body { background-color: var(--bg-dark); color: var(--text-main); overflow-x: hidden; }
+.hidden { display: none !important; }
+
+/* Background estético */
+.bg-gradient { position: fixed; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(0,255,136,0.03) 0%, rgba(10,10,12,1) 60%); z-index: -1; pointer-events: none; }
+
+/* Tipografia */
+h1, h2, h3 { font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+.glow-text { color: var(--neon-green); text-shadow: 0 0 15px var(--neon-green-dim); }
+
+/* Containers */
+.screen { min-height: 100vh; padding: 2vh 5vw; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.box { background: var(--card-bg); padding: 40px; border-radius: 16px; border: 1px solid var(--card-border); box-shadow: 0 20px 40px rgba(0,0,0,0.5); width: 100%; max-width: 450px; text-align: center; }
+.panel { background: var(--card-bg); padding: 25px; border-radius: 16px; border: 1px solid var(--card-border); display: flex; flex-direction: column; }
+.main-auction { border-top: 4px solid var(--neon-green); text-align: center; }
+
+/* Inputs & Buttons */
+input { padding: 14px 16px; border-radius: 8px; border: 1px solid var(--card-border); background: #1a1c23; color: white; margin-bottom: 15px; width: 100%; font-size: 16px; transition: all 0.3s; }
+input:focus { outline: none; border-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-green-dim); }
+
+.btn { width: 100%; padding: 14px; font-weight: 600; font-size: 16px; cursor: pointer; border-radius: 8px; border: none; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--neon-green); color: #000; }
+.btn-primary:hover { background: #00e077; box-shadow: 0 0 15px var(--neon-green-dim); }
+.btn-secondary { background: #2a2d36; color: white; }
+.btn-secondary:hover { background: #353842; }
+
+/* Utilitários Visuais */
+.divider { display: flex; align-items: center; margin: 25px 0; color: var(--text-muted); font-size: 12px; font-weight: 600; }
+.divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--card-border); }
+.divider span { padding: 0 10px; }
+.mt-10 { margin-top: 20px; }
+.info-badge { background: #1a1c23; padding: 15px; border-radius: 8px; margin-bottom: 25px; border: 1px solid var(--card-border); }
+
+/* Game Grid */
+.game-grid { display: grid; grid-template-columns: 320px 1fr 320px; gap: 24px; max-width: 1500px; width: 100%; align-items: start; }
+@media (max-width: 1024px) { .game-grid { grid-template-columns: 1fr; } }
+
+/* Cards & Ranking */
+.ranking-list { list-style: none; overflow-y: auto; max-height: 400px; }
+.ranking-list li { background: #1a1c23; margin-bottom: 8px; padding: 12px 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; transition: 0.2s; }
+.ranking-list li:hover { border-color: var(--card-border); background: #1f2129; }
+.my-squad-list { max-height: 200px; }
+
+/* Player Card */
+.player-card { background: linear-gradient(180deg, #1f2129 0%, #15161a 100%); border: 1px solid var(--gold); border-radius: 16px; padding: 25px; margin: 20px 0; position: relative; overflow: hidden; }
+.player-card img { width: 140px; height: 140px; border-radius: 50%; border: 3px solid var(--gold); margin-bottom: 15px; object-fit: cover; background: #000; }
+.player-info h2 { color: var(--gold); font-size: 26px; margin-bottom: 5px; }
+.player-info p { color: var(--text-muted); font-size: 14px; }
+.player-stats { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+.stat-box { background: rgba(0,0,0,0.4); padding: 10px 20px; border-radius: 8px; border: 1px solid rgba(255, 215, 0, 0.2); }
+.stat-box span { display: block; font-size: 12px; color: var(--text-muted); }
+.stat-box strong { font-size: 20px; color: var(--text-main); }
+
+/* Leilão Ativo */
+.timer-wrapper { font-size: 42px; font-weight: 800; color: var(--white); text-align: center; margin: 10px 0; display: flex; justify-content: center; align-items: center; gap: 10px; }
+.timer-text { text-shadow: 0 0 20px var(--neon-green-dim); font-variant-numeric: tabular-nums; }
+.auction-status { color: var(--gold); font-size: 20px; font-weight: 800; min-height: 30px; letter-spacing: 1px; }
+
+.current-bid-box { background: #1a1c23; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--card-border); border-left: 6px solid var(--neon-green); }
+.current-bid-box h2 { font-size: 40px; margin: 5px 0; }
+.bidder { color: var(--text-muted); font-size: 14px; }
+.bidder span { color: var(--text-main); font-weight: bold; }
+
+/* Controles de Lance */
+.bid-controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; }
+.btn-bid { background: #23252b; color: var(--neon-green); font-size: 18px; border: 1px solid rgba(0,255,136,0.3); padding: 15px 0; }
+.btn-bid:hover { background: rgba(0,255,136,0.1); border-color: var(--neon-green); }
+.custom-bid { display: flex; gap: 10px; }
+.custom-bid input { margin: 0; }
+.custom-bid button { width: 120px; }
+
+/* Chat */
+.chat-container { display: flex; flex-direction: column; flex: 1; }
+.chat-messages { flex: 1; min-height: 150px; background: #1a1c23; padding: 15px; border-radius: 8px; overflow-y: auto; list-style: none; margin-bottom: 15px; border: 1px solid var(--card-border); }
+.chat-messages li { margin-bottom: 8px; font-size: 14px; line-height: 1.4; word-break: break-word; }
+.chat-messages span.name { color: var(--neon-green); font-weight: 600; margin-right: 5px; }
+.chat-input-area { display: flex; gap: 10px; }
+.chat-input-area input { margin: 0; }
+.chat-input-area button { width: 100px; }
+
+/* Alertas SweetAlert (Customização) */
+.swal2-popup { background: var(--card-bg) !important; color: var(--text-main) !important; border: 1px solid var(--card-border); border-radius: 16px !important; }
+.swal2-title { color: var(--neon-green) !important; }
+.swal2-confirm { background-color: var(--neon-green) !important; color: #000 !important; font-weight: bold !important; border-radius: 8px !important; }

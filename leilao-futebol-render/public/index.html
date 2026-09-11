@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leilão do Futebol Pro</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 para notificações profissionais -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- BACKGROUND ANIMADO (Opcional, estilo mercado financeiro/futebol) -->
+    <div class="bg-gradient"></div>
+
+    <!-- TELA INICIAL -->
+    <div id="home-screen" class="screen">
+        <div class="box logo-box">
+            <h1 class="glow-text">⚽ LEILÃO DO FUTEBOL</h1>
+            <p style="color:#aaa; margin-bottom:20px;">Gerencie, lance e vença.</p>
+            <input type="text" id="playerName" placeholder="Seu Nome de Treinador" required autocomplete="off">
+            
+            <div class="divider"><span>CRIAR SALA</span></div>
+            <input type="password" id="createPassword" placeholder="Senha da Sala (Opcional)">
+            <button class="btn btn-primary" onclick="createRoom()">Criar e Entrar</button>
+            
+            <div class="divider"><span>ENTRAR EM SALA</span></div>
+            <input type="text" id="joinCode" placeholder="Código da Sala" autocomplete="off" style="text-transform: uppercase;">
+            <input type="password" id="joinPassword" placeholder="Senha da Sala (Se houver)">
+            <button class="btn btn-secondary" onclick="joinRoom()">Entrar</button>
+        </div>
+    </div>
+
+    <!-- LOBBY -->
+    <div id="lobby-screen" class="screen hidden">
+        <div class="box" style="max-width: 600px; width: 100%;">
+            <h2>SALA: <span id="lobbyRoomCode" class="glow-text"></span></h2>
+            <div class="info-badge">
+                <p>Orçamento: <strong style="color:var(--neon-green)">€<span id="lobbyMoney"></span>M</strong> | Tempo por lance: <strong><span id="lobbyTime"></span>s</strong></p>
+            </div>
+            
+            <h3>Jogadores (<span id="playerCount">0</span>/8)</h3>
+            <ul id="lobbyPlayers" class="ranking-list"></ul>
+            
+            <div class="action-buttons">
+                <button class="btn btn-secondary" id="btnReady" onclick="toggleReady()">Estou Pronto</button>
+                <button class="btn btn-primary hidden" id="btnStartGame" onclick="startGame()">Iniciar Partida</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA DO JOGO -->
+    <div id="game-screen" class="screen hidden">
+        <div class="game-grid">
+            <!-- Esquerda: Ranking -->
+            <div class="panel">
+                <div class="balance-card">
+                    <p>SEU SALDO</p>
+                    <h1 class="glow-text" style="font-size:3rem; margin:10px 0;">€<span id="myBalance">0</span>M</h1>
+                </div>
+                <h3>Ranking da Sala</h3>
+                <ul id="gameRanking" class="ranking-list mt-10"></ul>
+            </div>
+
+            <!-- Centro: Leilão -->
+            <div class="panel main-auction">
+                <div id="auction-alert" class="auction-status">Aguardando...</div>
+                
+                <div class="timer-wrapper">
+                    <span class="timer-icon">⏱️</span>
+                    <span id="auctionTimer" class="timer-text">00</span>
+                </div>
+                
+                <div class="player-card">
+                    <img id="aucImage" src="" alt="Jogador">
+                    <div class="player-info">
+                        <h2 id="aucName">--</h2>
+                        <p id="aucNacionality">--</p>
+                        <p id="aucClub">--</p>
+                    </div>
+                    <div class="player-stats">
+                        <div class="stat-box"><span>POS</span><strong id="aucPos">--</strong></div>
+                        <div class="stat-box"><span>OVR</span><strong id="aucOvr">--</strong></div>
+                        <div class="stat-box"><span>IDA</span><strong id="aucAge">--</strong></div>
+                    </div>
+                </div>
+
+                <div class="current-bid-box">
+                    <p>MAIOR LANCE</p>
+                    <h2 class="glow-text">€<span id="highestBid">0</span>M</h2>
+                    <p class="bidder">por <span id="highestBidder">Ninguém</span></p>
+                </div>
+
+                <div class="bid-controls">
+                    <button class="btn btn-bid" onclick="sendBidOffset(1)">+€1M</button>
+                    <button class="btn btn-bid" onclick="sendBidOffset(5)">+€5M</button>
+                    <button class="btn btn-bid" onclick="sendBidOffset(10)">+€10M</button>
+                    <button class="btn btn-bid" onclick="sendBidOffset(20)">+€20M</button>
+                </div>
+                <div class="custom-bid">
+                    <input type="number" id="customBid" placeholder="Lance exato (€)" min="1">
+                    <button class="btn btn-primary" onclick="sendCustomBid()">Lançar</button>
+                </div>
+            </div>
+
+            <!-- Direita: Elenco e Chat -->
+            <div class="panel">
+                <h3>Meu Elenco (<span id="mySquadCount">0</span>)</h3>
+                <ul id="mySquad" class="ranking-list my-squad-list"></ul>
+                
+                <div class="divider mt-10"></div>
+                
+                <h3>Chat da Sala</h3>
+                <div class="chat-container">
+                    <ul id="chatBox" class="chat-messages"></ul>
+                    <div class="chat-input-area">
+                        <input type="text" id="chatInput" placeholder="Mensagem..." autocomplete="off" onkeypress="if(event.key==='Enter') sendChat()">
+                        <button class="btn btn-secondary" onclick="sendChat()">Enviar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script do Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
